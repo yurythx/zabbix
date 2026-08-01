@@ -42,6 +42,19 @@ POSTGRES_PASSWORD=SuaSenhaForteAqui!
 
 > Se você pular esta etapa, o `docker-compose.yml` usa uma senha padrão fraca definida como fallback — não recomendado para produção.
 
+Se as portas padrão (`8080` e `10051`) já estiverem em uso no servidor (comum em ambientes com outros serviços rodando), ajuste no `.env`:
+
+```env
+ZABBIX_WEB_PORT=8081
+ZABBIX_SERVER_PORT=10052
+```
+
+Para checar o que já está usando uma porta antes de subir:
+
+```bash
+sudo ss -tulpn | grep 8080
+```
+
 ### 3. Subir os containers
 
 ```bash

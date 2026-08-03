@@ -61,8 +61,10 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-SuaSenhaSeguraAqui123!}
       ZBX_SERVER_HOST: zabbix-server
       PHP_TZ: "America/Sao_Paulo"
+      ZBX_SSO_SETTINGS: ${ZBX_SSO_SETTINGS:-}
     volumes:
       - /etc/localtime:/etc/localtime:ro
+      - ./certs:/etc/zabbix/web/certs:ro
     networks:
       - backend-net
       - frontend-net

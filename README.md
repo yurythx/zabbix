@@ -123,22 +123,24 @@ docker compose down -v
 docker compose restart zabbix-server
 ```
 
-## Customizações específicas de um servidor (ex.: SSO)
+## SSO/SAML (opcional)
 
-Se este servidor precisa de configuração que não deve ir para o repositório compartilhado (SSO/SAML apontando para um IdP local, certificados, portas específicas do ambiente), **não edite `docker-compose.yml` diretamente** — isso gera conflito no próximo `git pull`.
+O `zabbix-web` já vem preparado para SSO/SAML via variável de ambiente. Para habilitar:
 
-Crie um `docker-compose.override.yml` (já listado no `.gitignore`, então fica só local) na mesma pasta:
+1. Coloque o certificado do seu IdP em `./certs/idp.crt` (a pasta `certs/` já existe no repositório, mas os certificados reais **não são versionados** — veja o `.gitignore`).
+2. No `.env`, defina:
 
-```yaml
-services:
-  zabbix-web:
-    environment:
-      ZBX_SSO_SETTINGS: '{"baseurl": "http://SEU_IP:PORTA"}'
-    volumes:
-      - ./certs/idp.crt:/etc/zabbix/web/certs/idp.crt:ro
-```
+   ```env
+   ZBX_SSO_SETTINGS='{"baseurl": "http://SEU_IP_OU_DOMINIO:PORTA"}'
+   ```
 
-O Docker Compose mescla esse arquivo automaticamente com o `docker-compose.yml` principal ao rodar `docker compose up -d`.
+3. Suba/reinicie: `docker compose up -d`.
+
+Quem não usa SSO simplesmente deixa `ZBX_SSO_SETTINGS` de fora do `.env` — o valor padrão é vazio e não afeta o funcionamento normal do Zabbix.
+
+## Customizações específicas de um servidor (avançado)
+
+Para qualquer outra configuração local que não deva ir para o repositório compartilhado e que não seja coberta por uma variável de ambiente, crie um `docker-compose.override.yml` (já listado no `.gitignore`) na mesma pasta — o Docker Compose mescla esse arquivo automaticamente com o `docker-compose.yml` principal ao rodar `docker compose up -d`, sem gerar conflito em `git pull`.
 
 ## Estrutura de rede
 

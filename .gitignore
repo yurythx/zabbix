@@ -1,2 +1,6 @@
 .env
 docker-compose.override.yml
+
+# Certificados reais de SSO não devem ir para o repositório
+certs/*
+!certs/.gitkeep

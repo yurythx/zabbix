@@ -123,7 +123,7 @@ docker compose down -v
 docker compose restart zabbix-server
 ```
 
-## SSO/SAML (opcional)
+## SSO/SAML no Zabbix (opcional)
 
 O `zabbix-web` já vem preparado para SSO/SAML via variável de ambiente. Para habilitar:
 
@@ -137,6 +137,39 @@ O `zabbix-web` já vem preparado para SSO/SAML via variável de ambiente. Para h
 3. Suba/reinicie: `docker compose up -d`.
 
 Quem não usa SSO simplesmente deixa `ZBX_SSO_SETTINGS` de fora do `.env` — o valor padrão é vazio e não afeta o funcionamento normal do Zabbix.
+
+> O SSO do Zabbix é independente do Grafana — cada um tem sua própria configuração (veja abaixo).
+
+## SSO no Grafana via Keycloak (opcional)
+
+O `grafana` já vem preparado para autenticação via OAuth genérico (funciona com Keycloak). Para habilitar:
+
+1. No Keycloak, crie um **client** para o Grafana (ex.: `grafana`), tipo confidential, com **Redirect URI**:
+
+   ```
+   http://SEU_HOST_OU_IP:GRAFANA_PORT/login/generic_oauth
+   ```
+
+2. Copie o **Client ID** e o **Client Secret** (aba *Credentials* do client no Keycloak).
+3. Pegue as URLs do realm em **Realm Settings → General → Endpoints → OpenID Endpoint Configuration** (ou monte manualmente com o padrão `/realms/SEU_REALM/protocol/openid-connect/...`).
+4. No `.env`, defina:
+
+   ```env
+   GF_AUTH_GENERIC_OAUTH_ENABLED=true
+   GF_AUTH_GENERIC_OAUTH_NAME=Keycloak
+   GF_AUTH_GENERIC_OAUTH_CLIENT_ID=grafana
+   GF_AUTH_GENERIC_OAUTH_CLIENT_SECRET=<client secret do Keycloak>
+   GF_AUTH_GENERIC_OAUTH_SCOPES=openid email profile
+   GF_AUTH_GENERIC_OAUTH_AUTH_URL=http://SEU_KEYCLOAK/realms/SEU_REALM/protocol/openid-connect/auth
+   GF_AUTH_GENERIC_OAUTH_TOKEN_URL=http://SEU_KEYCLOAK/realms/SEU_REALM/protocol/openid-connect/token
+   GF_AUTH_GENERIC_OAUTH_API_URL=http://SEU_KEYCLOAK/realms/SEU_REALM/protocol/openid-connect/userinfo
+   ```
+
+5. Suba/reinicie: `docker compose up -d`.
+
+Na tela de login do Grafana vai aparecer um botão **"Sign in with Keycloak"**. O login local (`admin`/senha do `.env`) continua funcionando em paralelo — útil como acesso de emergência caso o Keycloak fique fora do ar.
+
+Quem não usa SSO simplesmente deixa `GF_AUTH_GENERIC_OAUTH_ENABLED=false` (padrão) — o Grafana funciona só com login local.
 
 ## Customizações específicas de um servidor (avançado)
 

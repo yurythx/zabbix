@@ -70,6 +70,26 @@ services:
       - zabbix-db
       - zabbix-server
 
+  # --------------------------------------------------------
+  # Grafana (dashboards a partir dos dados do Zabbix)
+  # --------------------------------------------------------
+  grafana:
+    image: grafana/grafana-oss:latest
+    container_name: zabbix-grafana
+    restart: always
+    ports:
+      - "${GRAFANA_PORT:-3000}:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+      GF_INSTALL_PLUGINS: alexanderzobnin-zabbix-app
+    volumes:
+      - grafana-data:/var/lib/grafana
+    networks:
+      - frontend-net
+    depends_on:
+      - zabbix-web
+
 networks:
   backend-net:
     driver: bridge
@@ -81,3 +101,4 @@ volumes:
   pgdata:
   zabbix-alertscripts:
   zabbix-externalscripts:
+  grafana-data:

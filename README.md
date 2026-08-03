@@ -1,14 +1,15 @@
-# Zabbix 7.0 LTS + PostgreSQL 16 (Docker Compose)
+# Zabbix 7.0 LTS + PostgreSQL 16 + Grafana (Docker Compose)
 
-Stack para monitoramento com Zabbix Server, Zabbix Web (Nginx + PHP) e PostgreSQL 16, isolados em redes Docker separadas (banco de dados sem acesso externo).
+Stack para monitoramento com Zabbix Server, Zabbix Web (Nginx + PHP), PostgreSQL 16 e Grafana (dashboards), isolados em redes Docker separadas (banco de dados sem acesso externo).
 
 ## Serviços
 
-| Serviço        | Imagem                                            | Porta exposta |
-|----------------|----------------------------------------------------|---------------|
-| zabbix-db      | postgres:16-alpine                                  | -             |
-| zabbix-server  | zabbix/zabbix-server-pgsql:alpine-7.0-latest        | 10051         |
-| zabbix-web     | zabbix/zabbix-web-nginx-pgsql:alpine-7.0-latest     | 8080          |
+| Serviço         | Imagem                                            | Porta exposta |
+|-----------------|----------------------------------------------------|---------------|
+| zabbix-db       | postgres:16-alpine                                  | -             |
+| zabbix-server   | zabbix/zabbix-server-pgsql:alpine-7.0-latest        | 10051         |
+| zabbix-web      | zabbix/zabbix-web-nginx-pgsql:alpine-7.0-latest     | 8080          |
+| zabbix-grafana  | grafana/grafana-oss:latest                          | 3000          |
 
 ## Pré-requisitos
 
@@ -47,6 +48,7 @@ Se as portas padrão (`8080` e `10051`) já estiverem em uso no servidor (comum 
 ```env
 ZABBIX_WEB_PORT=8081
 ZABBIX_SERVER_PORT=10052
+GRAFANA_PORT=3001
 ```
 
 Para checar o que já está usando uma porta antes de subir:
@@ -61,7 +63,7 @@ sudo ss -tulpn | grep 8080
 docker compose up -d
 ```
 
-Isso cria as networks (`backend-net`, `frontend-net`), os volumes (`pgdata`, `zabbix-alertscripts`, `zabbix-externalscripts`) e inicia os 3 containers.
+Isso cria as networks (`backend-net`, `frontend-net`), os volumes (`pgdata`, `zabbix-alertscripts`, `zabbix-externalscripts`, `grafana-data`) e inicia os 4 containers.
 
 ### 4. Aguardar a inicialização
 
@@ -82,6 +84,23 @@ Abra [http://localhost:8080](http://localhost:8080)
 
 > Troque a senha padrão do usuário `Admin` assim que fizer o primeiro login.
 
+### 6. Acessar o Grafana e conectar ao Zabbix
+
+Abra [http://localhost:3000](http://localhost:3000)
+
+- **Usuário:** valor de `GRAFANA_ADMIN_USER` (padrão `admin`)
+- **Senha:** valor de `GRAFANA_ADMIN_PASSWORD` definido no `.env`
+
+O plugin **Zabbix** (`alexanderzobnin-zabbix-app`) já vem instalado automaticamente na subida do container. Para configurar a fonte de dados:
+
+1. No Grafana, vá em **Connections → Data sources → Add data source**.
+2. Escolha **Zabbix**.
+3. Em **HTTP → URL**, use `http://zabbix-web:8080/api_jsonrpc.php` (nome do container na rede interna, não `localhost`).
+4. Em **Zabbix API details**, informe o usuário/senha do Zabbix (`Admin` / a senha que você definiu no primeiro login).
+5. Clique em **Save & test**.
+
+Depois é só importar ou criar dashboards usando os hosts/itens monitorados pelo Zabbix.
+
 ## Comandos úteis
 
 ```bash
@@ -92,6 +111,7 @@ docker compose ps
 docker logs -f zabbix-server
 docker logs -f zabbix-web
 docker logs -f zabbix-db
+docker logs -f zabbix-grafana
 
 # Parar os containers (mantém os dados)
 docker compose down
@@ -106,10 +126,11 @@ docker compose restart zabbix-server
 ## Estrutura de rede
 
 - `backend-net` (interna, sem saída para a internet): comunicação entre `zabbix-db` e `zabbix-server`.
-- `frontend-net`: comunicação entre `zabbix-server` e `zabbix-web`, e acesso externo via porta 8080.
+- `frontend-net`: comunicação entre `zabbix-server`, `zabbix-web` e `grafana`, e acesso externo via portas 8080/3000.
 
 ## Observações
 
 - Os dados do PostgreSQL persistem no volume `pgdata` mesmo após `docker compose down`.
+- Os dashboards e configurações do Grafana persistem no volume `grafana-data`.
 - Scripts de alerta/externos podem ser colocados nos volumes `zabbix-alertscripts` e `zabbix-externalscripts`.
 - O fuso horário do container web está fixado em `America/Sao_Paulo` (variável `PHP_TZ`).

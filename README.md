@@ -123,6 +123,23 @@ docker compose down -v
 docker compose restart zabbix-server
 ```
 
+## Customizações específicas de um servidor (ex.: SSO)
+
+Se este servidor precisa de configuração que não deve ir para o repositório compartilhado (SSO/SAML apontando para um IdP local, certificados, portas específicas do ambiente), **não edite `docker-compose.yml` diretamente** — isso gera conflito no próximo `git pull`.
+
+Crie um `docker-compose.override.yml` (já listado no `.gitignore`, então fica só local) na mesma pasta:
+
+```yaml
+services:
+  zabbix-web:
+    environment:
+      ZBX_SSO_SETTINGS: '{"baseurl": "http://SEU_IP:PORTA"}'
+    volumes:
+      - ./certs/idp.crt:/etc/zabbix/web/certs/idp.crt:ro
+```
+
+O Docker Compose mescla esse arquivo automaticamente com o `docker-compose.yml` principal ao rodar `docker compose up -d`.
+
 ## Estrutura de rede
 
 - `backend-net` (interna, sem saída para a internet): comunicação entre `zabbix-db` e `zabbix-server`.
